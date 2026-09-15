@@ -1,0 +1,6 @@
+playwright
+beautifulsoup4
+lxml
+pydantic
+python-dotenv
+google-genai
