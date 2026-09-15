@@ -4,3 +4,5 @@ lxml
 pydantic
 python-dotenv
 google-genai
+pytest
+pytest-asyncio
