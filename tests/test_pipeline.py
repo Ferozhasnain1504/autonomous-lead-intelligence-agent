@@ -257,8 +257,8 @@ async def test_pipeline_adds_missing_linkedin_profile():
     assert result is not None
     assert len(result.leadership) == 1
     assert result.leadership[0].name == "Jane Doe"
-    assert result.leadership[0].linkedin_url == (
-        "https://www.linkedin.com/in/janedoe"
+    assert str(result.leadership[0].linkedin_url) == (
+    "https://www.linkedin.com/in/janedoe"
     )
 
 

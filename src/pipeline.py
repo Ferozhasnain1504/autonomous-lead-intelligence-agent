@@ -7,7 +7,7 @@ from src.page_discovery import PageDiscovery
 from src.safe_runner import run_safely
 from src.schemas import CompanyIntelligence
 from src.external_search import ExternalSearch
-
+from pydantic import HttpUrl
 
 logger = logging.getLogger(__name__)
 
@@ -163,6 +163,6 @@ class EnrichmentPipeline:
             )
 
             if linkedin_url:
-                person.linkedin_url = linkedin_url
+               person.linkedin_url = HttpUrl(linkedin_url)
 
         return result
