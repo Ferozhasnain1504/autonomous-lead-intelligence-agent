@@ -1,0 +1,207 @@
+[1mdiff --git a/src/browser.py b/src/browser.py[m
+[1mindex de77b35..04e0ac3 100644[m
+[1m--- a/src/browser.py[m
+[1m+++ b/src/browser.py[m
+[36m@@ -1,13 +1,27 @@[m
+ import asyncio[m
+[32m+[m[32mimport logging[m
+ [m
+[31m-from playwright.async_api import Browser, Page, async_playwright[m
+[32m+[m[32mfrom playwright.async_api import ([m
+[32m+[m[32m    Browser,[m
+[32m+[m[32m    Page,[m
+[32m+[m[32m    TimeoutError as PlaywrightTimeoutError,[m
+[32m+[m[32m    async_playwright,[m
+[32m+[m[32m)[m
+[32m+[m
+[32m+[m
+[32m+[m[32mlogger = logging.getLogger(__name__)[m
+ [m
+ [m
+ class BrowserEngine:[m
+     """Manages a Chromium browser for retrieving rendered web pages."""[m
+ [m
+[31m-    def __init__(self, headless: bool = True):[m
+[32m+[m[32m    def __init__([m
+[32m+[m[32m        self,[m
+[32m+[m[32m        headless: bool = True,[m
+[32m+[m[32m        timeout: int = 30_000,[m
+[32m+[m[32m    ):[m
+         self.headless = headless[m
+[32m+[m[32m        self.timeout = timeout[m
+         self._playwright = None[m
+         self._browser: Browser | None = None[m
+ [m
+[36m@@ -21,15 +35,69 @@[m [mclass BrowserEngine:[m
+         )[m
+ [m
+     async def new_page(self) -> Page:[m
+[31m-        """Create and return a new browser page."""[m
+[32m+[m[32m        """Create and configure a new browser page."""[m
+ [m
+         if self._browser is None:[m
+[31m-            raise RuntimeError("BrowserEngine has not been started.")[m
+[32m+[m[32m            raise RuntimeError([m
+[32m+[m[32m                "BrowserEngine has not been started."[m
+[32m+[m[32m            )[m
+ [m
+         page = await self._browser.new_page()[m
+ [m
+[32m+[m[32m        page.set_default_timeout(self.timeout)[m
+[32m+[m
+         return page[m
+ [m
+[32m+[m[32m    async def fetch_page([m
+[32m+[m[32m        self,[m
+[32m+[m[32m        page: Page,[m
+[32m+[m[32m        url: str,[m
+[32m+[m[32m    ) -> str | None:[m
+[32m+[m[32m        """[m
+[32m+[m[32m        Navigate to a URL and return the rendered HTML.[m
+[32m+[m
+[32m+[m[32m        Returns None when the page cannot be retrieved.[m
+[32m+[m[32m        """[m
+[32m+[m
+[32m+[m[32m        try:[m
+[32m+[m[32m            response = await page.goto([m
+[32m+[m[32m                url,[m
+[32m+[m[32m                wait_until="domcontentloaded",[m
+[32m+[m[32m                timeout=self.timeout,[m
+[32m+[m[32m            )[m
+[32m+[m
+[32m+[m[32m            if response is None:[m
+[32m+[m[32m                logger.warning([m
+[32m+[m[32m                    "No response received for %s",[m
+[32m+[m[32m                    url,[m
+[32m+[m[32m                )[m
+[32m+[m[32m                return None[m
+[32m+[m
+[32m+[m[32m            if response.status >= 400:[m
+[32m+[m[32m                logger.warning([m
+[32m+[m[32m                    "HTTP %s while fetching %s",[m
+[32m+[m[32m                    response.status,[m
+[32m+[m[32m                    url,[m
+[32m+[m[32m                )[m
+[32m+[m[32m                return None[m
+[32m+[m
+[32m+[m[32m            return await page.content()[m
+[32m+[m
+[32m+[m[32m        except PlaywrightTimeoutError:[m
+[32m+[m[32m            logger.warning([m
+[32m+[m[32m                "Timeout while fetching %s",[m
+[32m+[m[32m                url,[m
+[32m+[m[32m            )[m
+[32m+[m[32m            return None[m
+[32m+[m
+[32m+[m[32m        except Exception as error:[m
+[32m+[m[32m            logger.warning([m
+[32m+[m[32m                "Failed to fetch %s: %s",[m
+[32m+[m[32m                url,[m
+[32m+[m[32m                error,[m
+[32m+[m[32m            )[m
+[32m+[m[32m            return None[m
+[32m+[m
+     async def close(self) -> None:[m
+         """Close the browser and Playwright."""[m
+ [m
+[36m@@ -43,22 +111,28 @@[m [mclass BrowserEngine:[m
+ async def main() -> None:[m
+     """Simple manual test for the browser engine."""[m
+ [m
+[32m+[m[32m    logging.basicConfig(level=logging.INFO)[m
+[32m+[m
+     browser = BrowserEngine(headless=False)[m
+ [m
+     await browser.start()[m
+ [m
+[31m-    page = await browser.new_page()[m
+[32m+[m[32m    try:[m
+[32m+[m[32m        page = await browser.new_page()[m
+ [m
+[31m-    await page.goto([m
+[31m-        "https://supabase.com",[m
+[31m-        wait_until="domcontentloaded",[m
+[31m-        timeout=30_000,[m
+[31m-    )[m
+[32m+[m[32m        html = await browser.fetch_page([m
+[32m+[m[32m            page,[m
+[32m+[m[32m            "https://example.com",[m
+[32m+[m[32m        )[m
+ [m
+[31m-    print("URL:", page.url)[m
+[31m-    print("Title:", await page.title())[m
+[32m+[m[32m        if html:[m
+[32m+[m[32m            print("Successfully fetched page.")[m
+[32m+[m[32m            print("HTML length:", len(html))[m
+[32m+[m[32m        else:[m
+[32m+[m[32m            print("Failed to fetch page.")[m
+ [m
+[31m-    await browser.close()[m
+[32m+[m[32m    finally:[m
+[32m+[m[32m        await browser.close()[m
+ [m
+ [m
+ if __name__ == "__main__":[m
+[1mdiff --git a/tests/test_browser.py b/tests/test_browser.py[m
+[1mindex 9425413..72e5cf8 100644[m
+[1m--- a/tests/test_browser.py[m
+[1m+++ b/tests/test_browser.py[m
+[36m@@ -12,13 +12,53 @@[m [masync def test_browser_can_open_page():[m
+     try:[m
+         page = await browser.new_page()[m
+ [m
+[31m-        await page.goto([m
+[32m+[m[32m        html = await browser.fetch_page([m
+[32m+[m[32m            page,[m
+             "https://example.com",[m
+[31m-            wait_until="domcontentloaded",[m
+[31m-            timeout=30_000,[m
+         )[m
+ [m
+[31m-        assert await page.title() == "Example Domain"[m
+[32m+[m[32m        assert html is not None[m
+[32m+[m[32m        assert "Example Domain" in html[m
+[32m+[m
+[32m+[m[32m    finally:[m
+[32m+[m[32m        await browser.close()[m
+[32m+[m
+[32m+[m
+[32m+[m[32m@pytest.mark.asyncio[m
+[32m+[m[32masync def test_fetch_page_returns_none_for_404():[m
+[32m+[m[32m    browser = BrowserEngine(headless=True)[m
+[32m+[m
+[32m+[m[32m    await browser.start()[m
+[32m+[m
+[32m+[m[32m    try:[m
+[32m+[m[32m        page = await browser.new_page()[m
+[32m+[m
+[32m+[m[32m        html = await browser.fetch_page([m
+[32m+[m[32m            page,[m
+[32m+[m[32m            "https://example.com/non-existent-page-12345",[m
+[32m+[m[32m        )[m
+[32m+[m
+[32m+[m[32m        assert html is None[m
+[32m+[m
+[32m+[m[32m    finally:[m
+[32m+[m[32m        await browser.close()[m
+[32m+[m
+[32m+[m
+[32m+[m[32m@pytest.mark.asyncio[m
+[32m+[m[32masync def test_fetch_page_returns_none_for_invalid_url():[m
+[32m+[m[32m    browser = BrowserEngine(headless=True)[m
+[32m+[m
+[32m+[m[32m    await browser.start()[m
+[32m+[m
+[32m+[m[32m    try:[m
+[32m+[m[32m        page = await browser.new_page()[m
+[32m+[m
+[32m+[m[32m        html = await browser.fetch_page([m
+[32m+[m[32m            page,[m
+[32m+[m[32m            "https://this-domain-definitely-does-not-exist-12345.com",[m
+[32m+[m[32m        )[m
+[32m+[m
+[32m+[m[32m        assert html is None[m
+ [m
+     finally:[m
+         await browser.close()[m
+\ No newline at end of file[m
