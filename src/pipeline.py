@@ -6,6 +6,7 @@ from src.gemini_extractor import GeminiExtractor
 from src.page_discovery import PageDiscovery
 from src.safe_runner import run_safely
 from src.schemas import CompanyIntelligence
+from src.external_search import ExternalSearch
 
 
 logger = logging.getLogger(__name__)
@@ -16,19 +17,17 @@ class EnrichmentPipeline:
 
     def __init__(
         self,
-        browser: BrowserEngine,
-        page_discovery: PageDiscovery | None = None,
-        content_cleaner: ContentCleaner | None = None,
-        extractor: GeminiExtractor | None = None,
+        browser,
+        page_discovery=None,
+        content_cleaner=None,
+        extractor=None,
+        external_search=None,
     ):
         self.browser = browser
-        self.page_discovery = (
-            page_discovery or PageDiscovery()
-        )
-        self.content_cleaner = (
-            content_cleaner or ContentCleaner()
-        )
+        self.page_discovery = page_discovery or PageDiscovery()
+        self.content_cleaner = content_cleaner or ContentCleaner()
         self.extractor = extractor or GeminiExtractor()
+        self.external_search = external_search or ExternalSearch()
 
     async def enrich_company(
         self,
@@ -91,15 +90,11 @@ class EnrichmentPipeline:
 
             combined_text = "\n\n".join(all_text)
 
-            result = await self.extractor.extract(
-                combined_text
-            )
+            result = await self.extractor.extract(combined_text)
 
-            logger.info(
-                "Successfully enriched %s",
-                domain,
-            )
+            result = await self.enrich_missing_linkedin_profiles(result)
 
+            logger.info("Successfully enriched %s", domain)
             return result
 
         except Exception as error:
@@ -151,3 +146,23 @@ class EnrichmentPipeline:
             domain = f"https://{domain}"
 
         return domain.rstrip("/")
+
+    async def enrich_missing_linkedin_profiles(
+    self,
+    result: CompanyIntelligence,
+    ) -> CompanyIntelligence:
+        """Find missing LinkedIn profiles using external search."""
+
+        for person in result.leadership:
+            if person.linkedin_url:
+                continue
+
+            linkedin_url = await self.external_search.find_linkedin_profile(
+                person.name,
+                result.company_name,
+            )
+
+            if linkedin_url:
+                person.linkedin_url = linkedin_url
+
+        return result

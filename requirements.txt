@@ -6,3 +6,4 @@ python-dotenv
 google-genai
 pytest
 pytest-asyncio
+tavily-python
