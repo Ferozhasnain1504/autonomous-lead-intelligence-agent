@@ -81,3 +81,68 @@ def test_gemini_extractor_rejects_empty_content():
         assert False, "Expected ValueError"
     except ValueError as error:
         assert str(error) == "Company text cannot be empty."
+
+class FakeBrokenInteraction:
+    """Fake Gemini response containing invalid JSON."""
+
+    output_text = "This is not valid JSON."
+
+
+class FakeBrokenInteractions:
+    """Fake Gemini interactions returning invalid output."""
+
+    def create(self, **kwargs):
+        return FakeBrokenInteraction()
+
+
+class FakeBrokenClient:
+    """Fake Gemini client returning invalid output."""
+
+    def __init__(self):
+        self.interactions = FakeBrokenInteractions()
+
+
+class FakeFailingInteractions:
+    """Fake Gemini interactions that raise an API error."""
+
+    def create(self, **kwargs):
+        raise RuntimeError("Gemini API unavailable")
+
+
+class FakeFailingClient:
+    """Fake Gemini client that simulates an API failure."""
+
+    def __init__(self):
+        self.interactions = FakeFailingInteractions()
+
+
+def test_gemini_extractor_rejects_malformed_response():
+    extractor = GeminiExtractor(client=FakeBrokenClient())
+
+    import asyncio
+
+    try:
+        asyncio.run(
+            extractor.extract(
+                "Example Corp builds software for developers."
+            )
+        )
+        assert False, "Expected validation/parsing error"
+    except Exception as error:
+        assert error is not None
+
+
+def test_gemini_extractor_handles_api_failure():
+    extractor = GeminiExtractor(client=FakeFailingClient())
+
+    import asyncio
+
+    try:
+        asyncio.run(
+            extractor.extract(
+                "Example Corp builds software for developers."
+            )
+        )
+        assert False, "Expected Gemini API error"
+    except RuntimeError as error:
+        assert str(error) == "Gemini API unavailable"
