@@ -17,7 +17,17 @@ class FakeInteraction:
                 "linkedin_url": "https://www.linkedin.com/in/janedoe"
             }
         ],
-        "confidence_score": 0.9
+        "confidence_score": 0.9,
+        "evidence": [
+            {
+                "field": "company_overview",
+                "evidence": "Example Corp builds software for developers."
+            },
+            {
+                "field": "target_audience",
+                "evidence": "The company builds software for development teams."
+            }
+        ]
     }
     """
 
@@ -53,6 +63,12 @@ def test_gemini_extractor_returns_company_intelligence():
     assert len(result.leadership) == 1
     assert result.leadership[0].name == "Jane Doe"
     assert result.confidence_score == 0.9
+    assert len(result.evidence) == 2
+    assert result.evidence[0].field == "company_overview"
+    assert result.evidence[0].evidence == (
+        "Example Corp builds software for developers."
+    )
+    assert result.evidence[1].field == "target_audience"
 
 
 def test_gemini_extractor_rejects_empty_content():
