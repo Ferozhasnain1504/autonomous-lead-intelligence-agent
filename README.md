@@ -165,7 +165,7 @@ autonomous-lead-intelligence-agent/
 ## Installation
 ### 1. Clone the repository
 ```bash
-git clone <YOUR_GITHUB_REPOSITORY_URL>
+git clone https://github.com/Ferozhasnain1504/autonomous-lead-intelligence-agent
 cd autonomous-lead-intelligence-agent
 ```
 ### 2. Create a virtual environment
@@ -426,5 +426,10 @@ Potential extensions include:
 - Retry policies with exponential backoff
 - Concurrent processing with configurable limits
 - Lead scoring based on extracted ICP signals
+
+## Role Operations Compatibility
+
+I am 100% comfortable with the manual lead prospecting, email discovery, and account-handling component of the role. I understand that the position combines AI agent engineering with hands-on prospecting and account-related operational work.
+
 ## Author
 Feroz Hasnain
