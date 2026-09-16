@@ -427,9 +427,5 @@ Potential extensions include:
 - Concurrent processing with configurable limits
 - Lead scoring based on extracted ICP signals
 
-## Role Operations Compatibility
-
-I am 100% comfortable with the manual lead prospecting, email discovery, and account-handling component of the role. I understand that the position combines AI agent engineering with hands-on prospecting and account-related operational work.
-
 ## Author
 Feroz Hasnain
